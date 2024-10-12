@@ -1,0 +1,27 @@
+{
+  "name": "wabe-postgres-launcher",
+  "version": "0.0.1",
+  "description": "Package to launch postgresSQL for test",
+  "main": "index.ts",
+  "scripts": {
+    "dev": "bun index.ts --watch",
+    "start": "bun dist/index.js",
+    "test:pg-mem": "bun testInMemoryPostgres.ts --watch",
+    "ci": "bun lint",
+    "build": "bun build index.ts testInMemoryPostgres.ts --target=bun --outdir dist",
+    "lint": "biome lint $(pwd)/*.ts --config-path=../../ --no-errors-on-unmatched",
+    "format": "biome format --config-path=../../ --write ."
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "pg": "^8.13.0",
+    "pg-mem": "^3.0.3",
+    "tcp-port-used": "^1.0.2"
+  },
+  "devDependencies": {
+    "@types/bun": "1.0.0",
+    "@types/tcp-port-used": "1.0.4",
+    "@types/pg": "^8.11.10"
+  }
+}
