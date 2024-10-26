@@ -16,7 +16,7 @@ export const setupInMemoryPostgres = async (): Promise<PGlite | undefined> => {
 
     const options: PGliteOptions = {
         database: 'postgres',
-        username: 'stepehawuah',
+        username: 'user',
         fs: new MemoryFS(),
         debug: 1, // Optional debug level for output
         relaxedDurability: true,
