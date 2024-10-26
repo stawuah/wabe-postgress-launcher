@@ -1,13 +1,12 @@
-import { newDb } from 'pg-mem';
+import { PGlite, type PGliteOptions, type Results } from '@electric-sql/pglite';
+import { MemoryFS } from '@electric-sql/pglite'
 import tcpPortUsed from 'tcp-port-used';
 import { Client as PgClient } from 'pg'; // For real PostgreSQL in production
+import type { PostgresClient } from './wabe-postgres';
 
-// Function to set up the in-memory PostgreSQL using pg-mem
-export const setupInMemoryPostgres = async (changed_loopback_aadress?: string): Promise<PgClient | undefined> => {
+export const setupInMemoryPostgres = async (): Promise<PGlite | undefined> => {
     const port = 5432;
-    const universalPort = changed_loopback_aadress || '0.0.0.0'; // Default to '0.0.0.0' if no port/loopback address is provided
-    console.log(`Checking if PostgreSQL is running on port ${port} with host ${universalPort}...`);
-
+    const universalPort = '127.0.0.1';
     const isPortInUse = await tcpPortUsed.check(port, universalPort);
 
     if (isPortInUse) {
@@ -15,38 +14,37 @@ export const setupInMemoryPostgres = async (changed_loopback_aadress?: string): 
         return; // Skip in-memory setup if real PostgreSQL is running
     }
 
-    // Create in-memory PostgreSQL using pg-mem
-    const db = newDb({
-        autoCreateForeignKeyIndices: true, // Ensure FK indices are automatically handled
-    });
-
-    const schemaSQL = `
-    CREATE TABLE wabe (
-        id SERIAL PRIMARY KEY,
-        wabe_project_name VARCHAR(255) NOT NULL,
-        email VARCHAR(255) NOT NULL UNIQUE
-    );
-    CREATE TABLE wabe_projects (
-        id SERIAL PRIMARY KEY,
-        wabe_project INT REFERENCES wabe(id),
-        title VARCHAR(255),
-        body TEXT
-    );
-    `;
-
-    const pgClient = db.adapters.createPg().Client;
-    const client = new pgClient();
+    const options: PGliteOptions = {
+        database: 'postgres',
+        username: 'stepehawuah',
+        fs: new MemoryFS(),
+        debug: 1, // Optional debug level for output
+        relaxedDurability: true,
+        initialMemory: 256 * 1024 * 1024,
+    };
 
     try {
-        await client.connect();
-        await client.query(schemaSQL);
+        const db = new PGlite(options); // Make sure to initialize the database with the options
+        
+
+        await db.waitReady; // Ensure database is fully initialized
         console.info('In-memory PostgreSQL instance started and schema initialized');
-        return client;
-    } catch (error) {
-        console.error('Error setting up in-memory PostgreSQL:', error);
-        throw error;
+
+        // Run an initial query to verify setup
+        const testQuery: Results = await db.query('SELECT NOW();');
+        console.info('Database time:', testQuery.rows[0]);
+
+        return db;
+    } catch (error : any) {
+        console.error('Error setting up in-memory PostgreSQL:', {
+            message: error.message,
+            stack: error.stack,
+            options, // log the options that were passed
+        });
+        
     }
 };
+
 
 // Utility to get the correct PostgreSQL client based on the environment
 export const getPostgresClient = async (
@@ -55,7 +53,7 @@ export const getPostgresClient = async (
     database?: string,
     password?: string,
     port?: number
-): Promise<PgClient | undefined> => {
+): Promise<PostgresClient> => { // Use the union type here
     const isProduction = process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging';
 
     console.log(`Environment: ${isProduction ? 'Production' : 'Development'}`);
@@ -83,13 +81,13 @@ export const getPostgresClient = async (
             throw error;
         }
     } else {
-        return await setupInMemoryPostgres();
+        return await setupInMemoryPostgres(); // This can return a PGlite instance
     }
 };
 
 // Run the client setup function
-getPostgresClient().then(client => {
-    if (client) {
+getPostgresClient().then(db => {
+    if (db) {
         console.log('PostgreSQL client is ready.');
     } else {
         console.log('No PostgreSQL client initialized.');

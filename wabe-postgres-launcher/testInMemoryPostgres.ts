@@ -30,7 +30,7 @@ import { setupInMemoryPostgres } from './index.ts'; // Import the setup function
         console.log('Data in wabe table:', selectResult.rows);
 
         // Close the client connection (only once)
-        await client.end();
+        await client.closed;
         console.log('In-memory PostgreSQL connection closed.');
 
     } catch (error) {
