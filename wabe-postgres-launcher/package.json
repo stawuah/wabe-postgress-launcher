@@ -15,8 +15,8 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@electric-sql/pglite": "^0.2.12",
     "pg": "^8.13.0",
+    "pg-mem": "^3.0.3",
     "tcp-port-used": "^1.0.2"
   },
   "devDependencies": {
